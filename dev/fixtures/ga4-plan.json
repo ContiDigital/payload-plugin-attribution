@@ -1,0 +1,4 @@
+{
+  "eventDimensions": ["lead_source", "first_campaign"],
+  "keyEvents": ["generate_lead", "purchase"]
+}

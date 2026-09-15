@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "jsx": "preserve",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "noEmit": true,
+    "plugins": [{ "name": "next" }],
+    "baseUrl": "./",
+    "paths": {
+      "payload-plugin-attribution": ["../src/index.ts"],
+      "payload-plugin-attribution/client": ["../src/exports/client.ts"],
+      "payload-plugin-attribution/next": ["../src/exports/next.ts"],
+      "payload-plugin-attribution/browser": ["../src/exports/browser.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx", "../src/**/*.ts", "../src/**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": ["../src/**/__tests__/**"]
+}
