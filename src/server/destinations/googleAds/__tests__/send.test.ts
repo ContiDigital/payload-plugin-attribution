@@ -557,3 +557,112 @@ describe('googleAdsHandler with a host access token and endpoint', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+describe('verified Google processing', () => {
+  const options = buildOptions({ verifyProcessing: true })
+  const send = (row = delivery(), item = event()) =>
+    googleAdsHandler.deliver({
+      delivery: row,
+      event: item,
+      lookup,
+      now,
+      options,
+      payload: {} as never,
+      signal: new AbortController().signal,
+    })
+  it('persists an acknowledgment, then polls it without submitting a second conversion', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(Response.json({ requestId: 'request-1' }))
+      .mockResolvedValueOnce(
+        Response.json({
+          requestStatusPerDestination: [
+            {
+              eventsIngestionStatus: { recordCount: '1' },
+              requestStatus: 'SUCCESS',
+            },
+          ],
+        }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const first = await send()
+    expect(first).toMatchObject({
+      kind: 'wait',
+      reason: 'google_processing',
+      response: { requestId: 'request-1' },
+    })
+    if (first.kind !== 'wait') {
+      throw new Error('Expected processing receipt')
+    }
+    // Identifiers can expire after submission; that must not prevent checking the accepted request.
+    const second = await send(
+      delivery({ response: first.response }),
+      event({ attribution: undefined }),
+    )
+    expect(second.kind).toBe('sent')
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(String(fetchMock.mock.calls[1][0])).toContain(
+      '/v1/requestStatus:retrieve?requestId=request-1',
+    )
+    expect(fetchMock.mock.calls[1][1].method).toBeUndefined()
+  })
+  it.each(['FAILED', 'FAILURE', 'PARTIAL_SUCCESS'])(
+    'does not report %s as successful delivery',
+    async (requestStatus) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValue(Response.json({ requestStatusPerDestination: [{ requestStatus }] })),
+      )
+      expect(
+        await send(delivery({ response: { requestId: 'r-1', submittedAt: now.toISOString() } })),
+      ).toMatchObject({ kind: 'dead', reason: 'google_processing_failed' })
+    },
+  )
+  it('retains the receipt during diagnostics outages', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('offline')))
+    expect(
+      await send(delivery({ response: { requestId: 'r-1', submittedAt: now.toISOString() } })),
+    ).toMatchObject({
+      kind: 'wait',
+      reason: 'diagnostics_network_error',
+      response: { requestId: 'r-1' },
+    })
+  })
+  it('rejects success diagnostics with an unexpected record count', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        Response.json({
+          requestStatusPerDestination: [
+            {
+              eventsIngestionStatus: { recordCount: '0' },
+              requestStatus: 'SUCCESS',
+            },
+          ],
+        }),
+      ),
+    )
+    expect(
+      await send(delivery({ response: { requestId: 'r-1', submittedAt: now.toISOString() } })),
+    ).toMatchObject({ kind: 'dead', reason: 'unexpected_record_count' })
+  })
+  it('waits for processing and backs off subsequent polls', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue(
+          Response.json({ requestStatusPerDestination: [{ requestStatus: 'PROCESSING' }] }),
+        ),
+    )
+    const outcome = await send(
+      delivery({ response: { polls: 3, requestId: 'r-1', submittedAt: now.toISOString() } }),
+    )
+    expect(outcome).toMatchObject({
+      kind: 'wait',
+      until: new Date(now.getTime() + 3600000).toISOString(),
+    })
+  })
+})

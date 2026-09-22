@@ -1,4 +1,8 @@
-import type { ConversionEventDoc, NormalizedGoogleAdsOptions } from '../../../types/index.js'
+import type {
+  ConversionEventDoc,
+  DeliveryDoc,
+  NormalizedGoogleAdsOptions,
+} from '../../../types/index.js'
 import type { DestinationHandler, DestinationOutcome } from '../types.js'
 
 import { DATA_MANAGER_INGEST_PATH } from '../../../constants.js'
@@ -14,6 +18,7 @@ import {
 } from './auth.js'
 import { googleAdsEligibility, googleAdsFeedEligibility } from './eligibility.js'
 import { buildIngestRequest } from './payload.js'
+import { processingReceipt, processingWait, verifyProcessing } from './processing.js'
 
 const errorMessage = (data: unknown): string | undefined => {
   if (!data || typeof data !== 'object' || !('error' in data)) {
@@ -36,12 +41,13 @@ function feedOutcome(
   return result.eligible ? { kind: 'eligible' } : { kind: 'withheld', reason: result.reason }
 }
 
-async function dataManagerOutcome(
+export async function dataManagerOutcome(
   event: ConversionEventDoc,
   googleAds: NormalizedGoogleAdsOptions,
   origin: string,
   now: Date,
   signal: AbortSignal,
+  delivery?: DeliveryDoc,
 ): Promise<DestinationOutcome> {
   const action = event.googleAdsAction
   if (action !== 'lead' && action !== 'sale') {
@@ -50,8 +56,9 @@ async function dataManagerOutcome(
 
   // Checked before any network call: an ineligible event (no usable identifiers, a stale
   // click, or denied consent leaving nothing to send) never reaches token acquisition or POST.
+  const receipt = googleAds.verifyProcessing ? processingReceipt(delivery?.response) : undefined
   const eligibility = googleAdsEligibility(event, now)
-  if (!eligibility.eligible) {
+  if (!receipt && !eligibility.eligible) {
     return { kind: 'withheld', reason: eligibility.reason }
   }
 
@@ -82,10 +89,14 @@ async function dataManagerOutcome(
     return { kind: 'dead', reason: 'auth_error' }
   }
 
+  if (receipt) {
+    return verifyProcessing({ now, origin, receipt, signal, token })
+  }
+
   const request = buildIngestRequest(event, {
     conversionActionId: googleAds.conversionActions[action],
     ...(loginAccountId ? { loginAccountId } : {}),
-    match: eligibility.match,
+    match: eligibility.eligible ? eligibility.match : undefined,
     operatingAccountId,
   })
 
@@ -109,6 +120,12 @@ async function dataManagerOutcome(
       data && typeof data === 'object' && 'requestId' in data
         ? (data as { requestId?: unknown }).requestId
         : undefined
+    if (googleAds.verifyProcessing) {
+      if (typeof requestId !== 'string' || !requestId) {
+        return { kind: 'retry', reason: 'missing_request_id' }
+      }
+      return { ...processingWait({ requestId, submittedAt: now.toISOString() }, now), request }
+    }
     return {
       kind: 'sent',
       request,
@@ -146,7 +163,7 @@ async function dataManagerOutcome(
 }
 
 export const googleAdsHandler: DestinationHandler = {
-  deliver: async ({ event, now, options, signal }) => {
+  deliver: async ({ delivery, event, now, options, signal }) => {
     const googleAds = options.destinations.googleAds
     if (!googleAds?.enabled) {
       return { kind: 'withheld', reason: 'not_configured' }
@@ -156,7 +173,14 @@ export const googleAdsHandler: DestinationHandler = {
       return feedOutcome(event, now, googleAds.allowBraidsInFeed)
     }
 
-    return dataManagerOutcome(event, googleAds, options.endpoints.dataManager, now, signal)
+    return dataManagerOutcome(
+      event,
+      googleAds,
+      options.endpoints.dataManager,
+      now,
+      signal,
+      delivery,
+    )
   },
   destination: 'googleAds',
 }

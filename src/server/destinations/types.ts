@@ -9,7 +9,14 @@ import type {
 } from '../../types/index.js'
 
 export type DestinationOutcome =
-  | { deadlineAt: string; kind: 'wait'; reason: string; until: string }
+  | {
+      deadlineAt: string
+      kind: 'wait'
+      reason: string
+      request?: unknown
+      response?: unknown
+      until: string
+    }
   | { kind: 'dead'; reason: string; response?: unknown }
   | { kind: 'eligible' }
   | { kind: 'retry'; reason: string; response?: unknown; retryAfterMs?: number }

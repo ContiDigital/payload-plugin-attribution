@@ -1,6 +1,8 @@
 import type { Attribution, ConsentState } from '../core/sanitize.js'
 import type { Touches } from '../core/touches.js'
+import type { Ga4Item } from '../types/index.js'
 
+import { validateItems } from '../core/items.js'
 import { validEventName } from '../core/names.js'
 import { sanitizeAttribution, withoutAdIdentifiers } from '../core/sanitize.js'
 import { decodeTouches, DEFAULT_COOKIE_NAME } from '../core/touches.js'
@@ -234,13 +236,19 @@ export function consentDefaults(defaults: {
 
 export function trackClient(
   name: string,
-  params: Record<string, boolean | number | string> = {},
+  params: Record<string, boolean | Ga4Item[] | number | string> = {},
   options: { eventId?: string; measurementId?: string } = {},
 ): null | string {
   // GA4 forbids personal data in parameters, and an address is the common accident.
   if (
     !validEventName(name) ||
-    Object.values(params).some((value) => typeof value === 'string' && value.includes('@'))
+    Object.entries(params).some(([key, value]) =>
+      key === 'items'
+        ? !validateItems(value)
+        : typeof value === 'string'
+          ? value.includes('@')
+          : typeof value !== 'boolean' && (typeof value !== 'number' || !Number.isFinite(value)),
+    )
   ) {
     return null
   }

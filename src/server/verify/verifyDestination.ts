@@ -7,6 +7,7 @@ import { getPluginContext } from '../../plugin/getPluginContext.js'
 import { deliveryLookup } from '../deliveries/lookup.js'
 import { readEvent } from '../deliveries/store.js'
 import { buildGa4Body } from '../destinations/ga4/payload.js'
+import { prepareDataManagerAdjustment } from '../destinations/googleAds/adjustment.js'
 import { dataManagerAccessToken, hostAccessToken } from '../destinations/googleAds/auth.js'
 import {
   googleAdsEligibility,
@@ -202,10 +203,29 @@ async function verifyGoogleAdsAdjustment(
   options: NormalizedOptions,
   payload: Payload,
   now: Date,
+  signal: AbortSignal,
 ): Promise<VerifyResult> {
   const googleAds = options.destinations.googleAds
   if (!googleAds?.enabled || !googleAds.adjustments.enabled) {
     return withheld('not_configured')
+  }
+  if (googleAds.adjustments.transport === 'dataManager') {
+    const prepared = await prepareDataManagerAdjustment({
+      event,
+      lookup: deliveryLookup(payload),
+      now,
+      payload,
+    })
+    if ('kind' in prepared) {
+      return { details: prepared, ok: false }
+    }
+    return verifyGoogleAdsDataManager(
+      prepared,
+      googleAds,
+      options.endpoints.dataManager,
+      now,
+      signal,
+    )
   }
   const { password, username } = await feedCredentials(googleAds)
   if (!username || !password) {
@@ -323,7 +343,7 @@ export async function verifyDestination(args: {
         return await verifyGoogleAds(event, options, now, signal)
       }
       case 'googleAdsAdjustment': {
-        return await verifyGoogleAdsAdjustment(event, options, payload, now)
+        return await verifyGoogleAdsAdjustment(event, options, payload, now, signal)
       }
       case 'meta': {
         return await verifyMeta(event, options, now, signal)

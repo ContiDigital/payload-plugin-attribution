@@ -98,7 +98,8 @@ const FEEDS: Record<
       })
     },
     destination: 'googleAdsAdjustment',
-    enabled: (googleAds) => googleAds.adjustments.enabled,
+    enabled: (googleAds) =>
+      googleAds.adjustments.enabled && googleAds.adjustments.transport === 'feed',
     headers: ADJUSTMENT_HEADERS,
   },
   conversions: {

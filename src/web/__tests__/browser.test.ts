@@ -329,6 +329,18 @@ describe('consentDefaults with a host dataLayer that is not an array', () => {
 })
 
 describe('trackClient', () => {
+  it('accepts ecommerce items but rejects nested personal data and malformed items', () => {
+    const gtag = vi.fn()
+    vi.stubGlobal('window', { gtag })
+    const items = [{ item_id: 'product-7', item_name: 'Blue Horizon', price: 9000, quantity: 1 }]
+    expect(trackClient('view_item', { currency: 'USD', items, value: 9000 })).toBeTruthy()
+    expect(gtag).toHaveBeenCalledWith('event', 'view_item', expect.objectContaining({ items }))
+    gtag.mockClear()
+    expect(trackClient('view_item', { items: [{ item_name: 'collector@example.com' }] })).toBeNull()
+    expect(trackClient('view_item', { items: [{ price: -1 }] })).toBeNull()
+    expect(gtag).not.toHaveBeenCalled()
+  })
+
   it('returns null for a reserved event name', () => {
     vi.stubGlobal('window', { gtag: vi.fn() })
     expect(trackClient('ad_click')).toBeNull()

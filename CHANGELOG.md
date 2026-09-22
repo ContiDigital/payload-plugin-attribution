@@ -4,6 +4,18 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-22
+
+### Added
+
+- Opt-in Data Manager value adjustments, serialized against original conversions and earlier refunds; API count retractions remain unsupported.
+- Opt-in processing confirmation with durable receipts and diagnostic polling, preserving requests across worker retries.
+- Browser ecommerce item arrays using the same validation as server events.
+
+### Fixed
+
+- Date-sensitive verification tests use a fixed clock rather than expiring over time.
+
 ## [0.1.0] - YYYY-MM-DD
 
 ### Added
