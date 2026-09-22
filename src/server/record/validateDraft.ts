@@ -1,6 +1,6 @@
 import { isIP } from 'node:net'
 
-import type { ConversionDraft, Ga4Item } from '../../types/index.js'
+import type { ConversionDraft } from '../../types/index.js'
 
 import {
   CONSENT_STATES,
@@ -9,6 +9,8 @@ import {
   GOOGLE_ADS_ACTIONS,
   GOOGLE_ADS_KINDS,
 } from '../../constants.js'
+import { validateItems } from '../../core/items.js'
+export { validateItems } from '../../core/items.js'
 import { currencyDigits, isMinorUnits } from '../../core/money.js'
 import { validEventName, validName } from '../../core/names.js'
 import { hasControlChar, plainObject, safePageUrl } from '../../core/sanitize.js'
@@ -37,35 +39,6 @@ const knownCurrency = (value: unknown): boolean => {
 }
 const ADS_KINDS = ['auto', ...GOOGLE_ADS_KINDS] as const
 const CONSENT_KEYS = ['adUserData', 'adPersonalization', 'analyticsStorage'] as const
-
-export function validateItems(items: unknown): items is Ga4Item[] {
-  return (
-    Array.isArray(items) &&
-    items.length <= 200 &&
-    items.every((item: unknown) => {
-      if (!item || typeof item !== 'object' || Array.isArray(item)) {
-        return false
-      }
-      const row = item as Record<string, unknown>
-      if (!(
-        (typeof row.item_id === 'string' && row.item_id.trim()) ||
-        (typeof row.item_name === 'string' && row.item_name.trim())
-      )) {
-        return false
-      }
-      if (Object.keys(row).length > 42) {
-        return false
-      }
-      return Object.entries(row).every(
-        ([key, value]) =>
-          validName(key) &&
-          (typeof value === 'string'
-            ? !value.includes('@')
-            : typeof value === 'number' && Number.isFinite(value) && value >= 0),
-      )
-    })
-  )
-}
 
 function validContextIp(value: unknown): boolean {
   return typeof value === 'string' && (isIP(value) === 4 || isIP(value) === 6)

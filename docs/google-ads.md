@@ -1,10 +1,12 @@
 # Google Ads
 
-Google Ads receives conversions through one of two transports, and adjustments through a scheduled CSV feed:
+Google Ads receives conversions through the Data Manager API or scheduled CSV feeds. Adjustments support either transport:
 
 - `transport: 'dataManager'` sends each conversion to the Data Manager API as it is delivered.
 - `transport: 'feed'` serves conversions as a CSV that a Google Ads scheduled upload pulls.
-- `adjustments.enabled` serves restatements and retractions as a second CSV, with either transport.
+- `adjustments: { enabled: true, transport: 'dataManager' }` sends value restatements through the API using the original transaction and action. It requires the Data Manager conversion transport.
+- `adjustments: { enabled: true, transport: 'feed' }` serves restatements and retractions as a second CSV. `feed` remains the adjustment default for backward compatibility.
+- `verifyProcessing: true` keeps API deliveries pending after acknowledgment, then polls Google's diagnostics after 30 minutes, backing off to hourly, for up to 25 hours. Only a successful one-record processing result becomes `sent`; failures retain diagnostics. Validation-only requests are not polled.
 
 <!-- sample: google-ads.ts -->
 
@@ -16,15 +18,15 @@ const feedCredentials = {
   username: 'google-ads',
 }
 
-// Conversions through the Data Manager API, adjustments through the scheduled CSV feed.
+// Conversions and value adjustments through the Data Manager API.
 export const dataManager: GoogleAdsDestinationOptions = {
-  adjustments: { enabled: true },
+  adjustments: { enabled: true, transport: 'dataManager' },
   conversionActions: { lead: '7000000001', sale: '7000000002' },
-  feed: feedCredentials,
   loginAccountId: '1234567890',
   operatingAccountId: '9876543210',
   serviceAccountJson: () => process.env.GOOGLE_ADS_SERVICE_ACCOUNT_JSON ?? '',
   transport: 'dataManager',
+  verifyProcessing: true,
 }
 
 // Conversions and adjustments both through scheduled CSV feeds, matched by conversion name.
@@ -36,26 +38,26 @@ export const feed: GoogleAdsDestinationOptions = {
 }
 ```
 
-| Option                            | Default             | Purpose                                                                                     |
-| --------------------------------- | ------------------- | ------------------------------------------------------------------------------------------- |
-| `transport`                       | Required            | `'dataManager'` or `'feed'`                                                                 |
-| `conversionActions.lead`, `.sale` | Required            | Data Manager: numeric conversion action ids. Feed: conversion action names                  |
-| `operatingAccountId`              | Data Manager only   | Google Ads customer id, digits only                                                         |
-| `loginAccountId`                  | None                | Manager account id, digits only, when access comes through a manager account                |
-| `serviceAccountJson`              | Data Manager only   | Service account key JSON, unless `accessToken` is set                                       |
-| `accessToken`                     | None                | Function returning a Data Manager bearer token, for hosts that mint their own tokens        |
-| `feed.username`, `feed.password`  | Feed or adjustments | HTTP Basic credentials Google Ads uses to pull the CSVs                                     |
-| `feed.lookbackDays`               | `90`                | Days of events each pull includes, 1 to 90                                                  |
-| `adjustments.enabled`             | `false`             | Serves the adjustments CSV                                                                  |
-| `allowBraidsInFeed`               | `false`             | Puts a `gbraid` or `wbraid` in the conversions CSV click id column when there is no `gclid` |
-| `consentPolicy`                   | `'withhold-denied'` | Applied to `adUserData`. See [privacy](privacy.md)                                          |
-| `enabled`                         | `true`              | Keeps the options without delivering                                                        |
+| Option                            | Default              | Purpose                                                                                     |
+| --------------------------------- | -------------------- | ------------------------------------------------------------------------------------------- |
+| `transport`                       | Required             | `'dataManager'` or `'feed'`                                                                 |
+| `conversionActions.lead`, `.sale` | Required             | Data Manager: numeric conversion action ids. Feed: conversion action names                  |
+| `operatingAccountId`              | Data Manager only    | Google Ads customer id, digits only                                                         |
+| `loginAccountId`                  | None                 | Manager account id, digits only, when access comes through a manager account                |
+| `serviceAccountJson`              | Data Manager only    | Service account key JSON, unless `accessToken` is set                                       |
+| `accessToken`                     | None                 | Function returning a Data Manager bearer token, for hosts that mint their own tokens        |
+| `feed.username`, `feed.password`  | Feed transports only | HTTP Basic credentials Google Ads uses to pull the CSVs                                     |
+| `feed.lookbackDays`               | `90`                 | Days of events each pull includes, 1 to 90                                                  |
+| `adjustments.enabled`             | `false`              | Enables the selected adjustment transport                                                   |
+| `allowBraidsInFeed`               | `false`              | Puts a `gbraid` or `wbraid` in the conversions CSV click id column when there is no `gclid` |
+| `consentPolicy`                   | `'withhold-denied'`  | Applied to `adUserData`. See [privacy](privacy.md)                                          |
+| `enabled`                         | `true`               | Keeps the options without delivering                                                        |
 
 Feed conversion names are 1 to 100 characters, with no commas, double quotes, newlines or surrounding whitespace, and cannot start with `+`, `-`, `=`, `@`, a tab or a carriage return.
 
 ## Which events reach Google Ads
 
-A draft's `googleAds` decides its treatment; see [recording](recording.md#google-ads-treatment). Only events with `action` `lead` or `sale` and a `transactionId` are delivered: `conversion` events to the conversions transport, `restatement` and `retraction` events to the adjustments feed.
+A draft's `googleAds` decides its treatment; see [recording](recording.md#google-ads-treatment). Only events with `action` `lead` or `sale` and a `transactionId` are delivered: `conversion` events to the conversions transport, `restatement` and `retraction` events to the selected adjustment transport. The API supports restatement only; a full refund restated to zero changes value but preserves count. Use a supported retraction upload if count removal is required.
 
 A conversion is eligible when it has at least one of:
 
@@ -110,7 +112,7 @@ The first header belongs to the conversions file and the second to the adjustmen
 
 Restatements (`RESTATE`) set a conversion to a new value: `adjustedValueCents`, else `valueCents`. Retractions (`RETRACT`) remove it and leave value and currency blank. The adjustment time is the event's `occurredAt`.
 
-An adjustment waits for its original conversion:
+A **feed** adjustment waits for its original conversion:
 
 - The original must reach Google: any delivery of the original conversion, across its revisions and redeliveries, `sent` through Data Manager or served at least once through the feed. A later revision whose row is withheld, dead or superseded does not take that back, and the adjustment windows run from the earliest such delivery. When no delivery of the original ever reached Google, the adjustment is withheld with `original_not_delivered`.
 - While the original is still on its way, the adjustment checks again every 6 hours for up to 7 days after the original's row was created, then is withheld.
@@ -123,3 +125,9 @@ Whether a file adjustment applies to a conversion ingested through Data Manager 
 ## Verification
 
 `verifyDestination` for `googleAds` on Data Manager evaluates eligibility, mints a token and posts the event with `validateOnly: true`, which Google validates without ingesting. On the feed transport, and for `googleAdsAdjustment`, it renders the CSV row locally, applying the same original, window and retraction rules, and makes no request.
+
+## Data Manager value adjustments
+
+The API matches on the original action and transaction ID. The plugin waits for the original delivery to be `sent`, keeps its timestamp and identifiers, and substitutes `adjustedValueCents`. Enable `verifyProcessing` to gate refunds on processing confirmation, not just receipt. It coalesces older unsent totals and waits for earlier in-flight adjustments so a delayed refund cannot restore an obsolete higher value. It never submits an adjustment when the original delivery failed or was withheld. Pending originals and prior adjustments are checked every five minutes for up to seven days.
+
+`verifyDestination` also validates API adjustments with `validateOnly: true`; it does not ingest a conversion. Google supports [value restatements](https://developers.google.com/data-manager/api/devguides/events/google-ads/conversion-adjustments), but [not count retractions](https://developers.google.com/data-manager/api/devguides/events/google-ads/offline/upgrade). Setting a refunded purchase to zero therefore retains one conversion with no remaining revenue.

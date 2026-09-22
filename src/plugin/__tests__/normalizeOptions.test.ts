@@ -524,3 +524,32 @@ describe('attributionPlugin', () => {
     expect(() => attributionPlugin({ secret: '' })({} as Config)).toThrow(/secret is required/)
   })
 })
+
+it('allows Data Manager adjustments without feed credentials and rejects incompatible feed transport', () => {
+  expect(
+    normalizeOptions({
+      ...base,
+      destinations: {
+        googleAds: {
+          ...dataManager,
+          adjustments: { enabled: true, transport: 'dataManager' },
+          verifyProcessing: true,
+        },
+      },
+    }).destinations.googleAds,
+  ).toMatchObject({
+    adjustments: { enabled: true, transport: 'dataManager' },
+    verifyProcessing: true,
+  })
+  expect(() =>
+    normalizeOptions({
+      ...base,
+      destinations: {
+        googleAds: {
+          ...feed,
+          adjustments: { enabled: true, transport: 'dataManager' },
+        },
+      },
+    }),
+  ).toThrow(/Data Manager/)
+})

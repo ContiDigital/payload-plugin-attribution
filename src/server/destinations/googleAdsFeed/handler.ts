@@ -1,6 +1,7 @@
 import type { DestinationHandler, DestinationOutcome } from '../types.js'
 
 import { feedCredentials } from '../../endpoints/basicAuth.js'
+import { deliverDataManagerAdjustment } from '../googleAds/adjustment.js'
 import {
   adjustmentNotApplicable,
   decideAdjustment,
@@ -8,10 +9,14 @@ import {
 } from './adjustmentDecision.js'
 
 export const googleAdsAdjustmentHandler: DestinationHandler = {
-  deliver: async ({ event, lookup, now, options }): Promise<DestinationOutcome> => {
+  deliver: async (args): Promise<DestinationOutcome> => {
+    const { event, lookup, now, options } = args
     const googleAds = options.destinations.googleAds
     if (!googleAds?.enabled || !googleAds.adjustments.enabled) {
       return { kind: 'withheld', reason: 'not_configured' }
+    }
+    if (googleAds.adjustments.transport === 'dataManager') {
+      return deliverDataManagerAdjustment(args)
     }
     const { password, username } = await feedCredentials(googleAds)
     if (!username || !password) {

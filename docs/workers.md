@@ -27,6 +27,10 @@ Delivery is at least once. A worker that crashes after the provider accepted a r
 
 ## Reasons
 
+Data Manager processing uses `google_processing` while awaiting Google's receipt diagnostics; `diagnostics_network_error`, `invalid_diagnostics` and `missing_diagnostics` keep polling the same request. `missing_request_id` retries an acknowledgment without a usable receipt. Terminal diagnostics use `google_processing_failed` or `unexpected_record_count`.
+
+Data Manager refund delivery uses `awaiting_prior_adjustment` to serialize updates, `superseded_adjustment` for an older unsent total, `invalid_adjustment` for malformed values and `data_manager_retraction_unsupported` when a host requests a count retraction. Value restatement to zero does not retract the conversion count.
+
 A delivery row's `reason`, shown in the deliveries panel and in `deliverySummary`, says why the row is in its status. `http_<status>` carries the provider's HTTP status code.
 
 ### Retry

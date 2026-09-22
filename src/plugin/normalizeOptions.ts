@@ -140,7 +140,16 @@ const validateConversionActions = (input: GoogleAdsDestinationOptions, label: st
 const normalizeGoogleAds = (input: GoogleAdsDestinationOptions): NormalizedGoogleAdsOptions => {
   const label = 'destinations.googleAds'
   const enabled = input.enabled !== false
-  const adjustments = { enabled: input.adjustments?.enabled === true }
+  const adjustments = {
+    enabled: input.adjustments?.enabled === true,
+    transport: input.adjustments?.transport ?? 'feed',
+  }
+  if (!['dataManager', 'feed'].includes(adjustments.transport)) {
+    fail(`${label}.adjustments.transport is invalid`)
+  }
+  if (adjustments.transport === 'dataManager' && input.transport !== 'dataManager') {
+    fail(`${label} Data Manager adjustments require the Data Manager conversion transport`)
+  }
   const lookbackDays = input.feed?.lookbackDays ?? DEFAULT_FEED_LOOKBACK_DAYS
   if (enabled) {
     if (!includes(GOOGLE_ADS_TRANSPORTS, input.transport)) {
@@ -164,7 +173,7 @@ const normalizeGoogleAds = (input: GoogleAdsDestinationOptions): NormalizedGoogl
       digitSetting(input.loginAccountId, `${label}.loginAccountId`)
     }
     if (
-      (input.transport === 'feed' || adjustments.enabled) &&
+      (input.transport === 'feed' || (adjustments.enabled && adjustments.transport === 'feed')) &&
       !(presentSetting(input.feed?.username) && presentSetting(input.feed?.password))
     ) {
       fail(

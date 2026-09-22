@@ -108,6 +108,8 @@ const settleWait = (
     return retryOrDead(claimed, 'invalid_outcome', now, options)
   }
   const waited = {
+    ...(outcome.request === undefined ? {} : { request: outcome.request }),
+    ...withResponse(outcome.response),
     ...releasedAttempt(claimed),
     deadlineAt: new Date(deadline).toISOString(),
     reason: outcome.reason,

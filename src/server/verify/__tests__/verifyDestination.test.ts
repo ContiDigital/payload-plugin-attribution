@@ -52,6 +52,7 @@ const fakePayload = (options: NormalizedOptions, doc: ConversionEventDoc | null)
   }) as unknown as Payload
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   vi.clearAllMocks()
   clearTokenCache()
@@ -59,6 +60,8 @@ afterEach(() => {
 
 describe('verifyDestination', () => {
   beforeEach(() => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(now)
     clearTokenCache()
   })
 

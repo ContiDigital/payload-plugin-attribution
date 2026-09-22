@@ -126,7 +126,8 @@ export type GoogleAdsDestinationOptions = {
    * for hosts that obtain tokens elsewhere and for local mock providers.
    */
   accessToken?: () => Promise<string> | string
-  adjustments?: { enabled?: boolean }
+  /** Data Manager restates value only; count retractions require the feed transport. */
+  adjustments?: { enabled?: boolean; transport?: 'dataManager' | 'feed' }
   allowBraidsInFeed?: boolean
   consentPolicy?: ConsentPolicy
   /** Data Manager: conversion action ids. Feed: conversion names. */
@@ -139,6 +140,8 @@ export type GoogleAdsDestinationOptions = {
   /** Data Manager only. */
   serviceAccountJson?: Setting
   transport: 'dataManager' | 'feed'
+  /** Wait for Google's asynchronous processing result before marking a delivery sent. */
+  verifyProcessing?: boolean
 }
 
 export type MetaDestinationOptions = {
@@ -220,7 +223,7 @@ export type NormalizedGa4Options = {
 } & Ga4DestinationOptions
 
 export type NormalizedGoogleAdsOptions = {
-  adjustments: { enabled: boolean }
+  adjustments: { enabled: boolean; transport: 'dataManager' | 'feed' }
   allowBraidsInFeed: boolean
   consentPolicy: ConsentPolicy
   enabled: boolean

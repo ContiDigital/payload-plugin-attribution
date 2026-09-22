@@ -186,6 +186,34 @@ describe(`runDelivery on ${databaseName}`, () => {
     expect(handlerCalls).toHaveLength(1)
   })
 
+  it('persists a processing receipt across worker waits and retries without losing the original request', async () => {
+    const receipt = { requestId: 'google-receipt', submittedAt: START.toISOString() }
+    behavior = () =>
+      Promise.resolve({
+        deadlineAt: new Date(START.getTime() + 25 * HOUR).toISOString(),
+        kind: 'wait',
+        reason: 'google_processing',
+        request: { transactionId: 'order-1' },
+        response: receipt,
+        until: new Date(START.getTime() + HOUR).toISOString(),
+      })
+    const ga4 = (await record('run-receipt-persist')).row('ga4')
+    await runDelivery({ deliveryId: ga4.id, now: START, payload })
+    expect(await readDelivery(ga4.id)).toMatchObject({
+      request: { transactionId: 'order-1' },
+      response: receipt,
+    })
+    behavior = ({ delivery }) => {
+      expect(delivery.response).toEqual(receipt)
+      return Promise.resolve({ kind: 'retry', reason: 'auth_unavailable' })
+    }
+    await runDelivery({ deliveryId: ga4.id, now: new Date(START.getTime() + HOUR), payload })
+    expect(await readDelivery(ga4.id)).toMatchObject({
+      request: { transactionId: 'order-1' },
+      response: receipt,
+    })
+  })
+
   it('keeps the attempt count across waits and withholds once the deadline passes', async () => {
     const deadline = new Date(START.getTime() + 24 * HOUR)
     behavior = ({ now }) =>
