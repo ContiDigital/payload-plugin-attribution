@@ -4,10 +4,13 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-09-29
+
 ### Fixed
 
 - Browser ecommerce item declarations no longer import Payload server types, preserving the standalone browser entry point and packed-package boundary checks.
 - The E2E bootstrap disables Payload's development HMR socket so it exits after database setup, and the development harness disables external telemetry.
+- Live GA4 validation fails on any validation message instead of merely checking that the response contains the validation field.
 
 ## [0.1.1] - 2026-09-22
 
@@ -21,7 +24,7 @@ All notable changes to this project are documented here. The format follows [Kee
 
 - Date-sensitive verification tests use a fixed clock rather than expiring over time.
 
-## [0.1.0] - YYYY-MM-DD
+## [0.1.0] - 2026-09-15
 
 ### Added
 

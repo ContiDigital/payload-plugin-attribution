@@ -34,7 +34,7 @@ The host supplies credentials, authorization, the recording calls, consent signa
 | Google Ads feeds         | Basic-auth conversion and adjustment CSVs for scheduled uploads; restatement and retraction windows                             | Live canary pending until recorded in [RELEASING.md](RELEASING.md). Check both files in the Google Ads upload preview before scheduling them.         |
 | Meta Conversions API     | Server events with `event_id` for pixel deduplication, Limited Data Use, test event codes                                       | Live canary pending until recorded in [RELEASING.md](RELEASING.md). Confirm events in Test Events with a `test_event_code` first.                     |
 
-Automated tests use local mock providers only. Provider approval, quotas and policy compliance are the host's responsibility.
+CI tests use local mock providers. Opt-in live validation checks and their evidence are recorded in [RELEASING.md](RELEASING.md); validation does not establish ingestion or matching. Provider approval, quotas and policy compliance are the host's responsibility.
 
 ## Install
 

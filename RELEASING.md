@@ -32,8 +32,10 @@ A destination's readiness in the README stays "live canary pending" until its ca
 
 Record each canary in this table before tagging. Add one row per destination and check, with the date, the account or property type (never its id when it identifies a customer), what was confirmed, and who confirmed it.
 
-| Date (UTC) | Destination | Check | Evidence | Confirmed by |
-| ---------- | ----------- | ----- | -------- | ------------ |
+| Date (UTC) | Destination             | Check                                                                               | Evidence                                                                                                                                        | Confirmed by                    |
+| ---------- | ----------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------- |
+| 2026-09-29 | GA4                     | Validation endpoint, existing web property                                          | Strict validation returned no messages. Collection and report visibility on a separate validation property remain pending.                      | Maintainer release verification |
+| 2026-09-29 | Google Ads Data Manager | Validation-only request, operating account with an existing offline purchase action | The real API accepted the plugin-built request with `validateOnly`; no conversion was ingested. Processing and matching remain separate checks. | Maintainer release verification |
 
 ## 4. One-time npm bootstrap
 
