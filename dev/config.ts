@@ -62,6 +62,7 @@ export function devConfig(
       : sqliteAdapter({ client: { url: database }, transactionOptions: {} }),
     plugins: [attributionPlugin(options)],
     secret: 'local-only-payload-development-secret',
+    telemetry: false,
     typescript: { autoGenerate: false },
     ...overrides,
   })

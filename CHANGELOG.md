@@ -4,6 +4,11 @@ All notable changes to this project are documented here. The format follows [Kee
 
 ## [Unreleased]
 
+### Fixed
+
+- Browser ecommerce item declarations no longer import Payload server types, preserving the standalone browser entry point and packed-package boundary checks.
+- The E2E bootstrap disables Payload's development HMR socket so it exits after database setup, and the development harness disables external telemetry.
+
 ## [0.1.1] - 2026-09-22
 
 ### Added

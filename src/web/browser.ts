@@ -1,6 +1,6 @@
+import type { Ga4Item } from '../core/items.js'
 import type { Attribution, ConsentState } from '../core/sanitize.js'
 import type { Touches } from '../core/touches.js'
-import type { Ga4Item } from '../types/index.js'
 
 import { validateItems } from '../core/items.js'
 import { validEventName } from '../core/names.js'
