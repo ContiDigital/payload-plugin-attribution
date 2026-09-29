@@ -1,6 +1,13 @@
-import type { Ga4Item } from '../types/index.js'
-
 import { validName } from './names.js'
+
+export type Ga4Item = {
+  [key: string]: number | string | undefined
+  discount?: number
+  item_id?: string
+  item_name?: string
+  price?: number
+  quantity?: number
+}
 
 export function validateItems(items: unknown): items is Ga4Item[] {
   return (

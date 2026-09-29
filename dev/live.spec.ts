@@ -105,7 +105,7 @@ describe.skipIf(!ga4 && !googleAds && !meta)('live provider validation', () => {
     'validates a GA4 event with the Measurement Protocol debug endpoint',
     async () => {
       const result = await verifyDestination({ destination: 'ga4', eventId: event.id, payload })
-      expect(result.details).toHaveProperty('validationMessages')
+      expect(result).toMatchObject({ details: { validationMessages: [] }, ok: true })
     },
   )
 

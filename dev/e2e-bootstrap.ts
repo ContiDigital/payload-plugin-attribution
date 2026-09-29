@@ -13,6 +13,8 @@ for (const suffix of ['', '-journal', '-shm', '-wal']) {
 }
 
 const { default: config } = await import('./payload.config.js')
+// This CLI process has no Next.js server. An HMR socket can keep it alive after destroy().
+process.env.DISABLE_PAYLOAD_HMR = 'true'
 const payload = await getPayload({ config, cron: false })
 try {
   await payload.create({ collection: 'users', data: E2E_USER })

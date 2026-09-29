@@ -13,12 +13,14 @@ import type {
 import type { GoogleIdentifiers } from '../core/identifiers/google.js'
 import type { MetaIdentifiers } from '../core/identifiers/meta.js'
 import type { BuyerIdentity } from '../core/identifiers/normalize.js'
+import type { Ga4Item } from '../core/items.js'
 import type { Attribution, ConsentState } from '../core/sanitize.js'
 import type { AttributionDispatcher } from '../server/dispatch/types.js'
 
 export type { GoogleIdentifiers } from '../core/identifiers/google.js'
 export type { MetaIdentifiers } from '../core/identifiers/meta.js'
 export type { BuyerIdentity } from '../core/identifiers/normalize.js'
+export type { Ga4Item } from '../core/items.js'
 export type { Attribution, ConsentState } from '../core/sanitize.js'
 export type {
   DeliveryLookup,
@@ -50,15 +52,6 @@ export type ResolvedIdentity = {
   userId: string
   userProperties?: Record<string, number | string>
 } & BuyerIdentity
-
-export type Ga4Item = {
-  [key: string]: number | string | undefined
-  discount?: number
-  item_id?: string
-  item_name?: string
-  price?: number
-  quantity?: number
-}
 
 export type ConversionDraft = {
   attribution?: Attribution | null
