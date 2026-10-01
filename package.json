@@ -86,7 +86,7 @@
     "release:check": "pnpm check:repository && pnpm format:check && pnpm lint && pnpm typecheck && pnpm test:coverage && pnpm build && pnpm pack:smoke && pnpm package:check && pnpm audit:prod"
   },
   "dependencies": {
-    "google-auth-library": "^10.9.1"
+    "google-auth-library": "^11.1.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "0.18.5",
