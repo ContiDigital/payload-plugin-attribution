@@ -1,6 +1,6 @@
 {
   "name": "payload-plugin-attribution",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "First-party attribution capture and durable conversion delivery to GA4, Google Ads and Meta for Payload CMS",
   "keywords": [
     "payload",

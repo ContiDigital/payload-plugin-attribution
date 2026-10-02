@@ -360,7 +360,7 @@ const recordInTransaction = async (
     revision,
     shippingCents: draft.shippingCents,
     subject: draft.subject
-      ? { id: String(draft.subject.id), collectionSlug: draft.subject.collectionSlug }
+      ? { collectionSlug: draft.subject.collectionSlug, recordId: String(draft.subject.id) }
       : {},
     taxCents: draft.taxCents,
     transactionId: draft.transactionId,

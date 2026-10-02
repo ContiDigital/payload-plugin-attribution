@@ -41,7 +41,7 @@ export function conversionEvents(
       type: 'group',
       fields: [
         { name: 'collectionSlug', type: 'text' },
-        { name: 'id', type: 'text' },
+        { name: 'recordId', type: 'text' },
       ],
     },
     attributionField(),
@@ -118,6 +118,20 @@ export function conversionEvents(
       useAsTitle: 'eventKey',
     },
     fields: readOnly(fields),
+    hooks: mode.schemaOnly
+      ? undefined
+      : {
+          afterRead: [
+            ({ doc }) => {
+              // Payload reserves nested `id` and removes it while reading groups. Store
+              // a non-reserved field, then preserve the public subject.id contract.
+              if (doc.subject?.recordId != null) {
+                doc.subject.id = doc.subject.recordId
+              }
+              return doc
+            },
+          ],
+        },
     labels: { plural: 'Conversion events', singular: 'Conversion event' },
   }
 }

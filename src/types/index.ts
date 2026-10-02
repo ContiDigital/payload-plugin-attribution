@@ -291,7 +291,7 @@ export type ConversionEventDoc = {
   params?: null | Record<string, boolean | number | string>
   revision: number
   shippingCents?: null | number
-  subject?: { collectionSlug?: null | string; id?: null | string }
+  subject?: { collectionSlug?: null | string; id?: null | string; recordId?: null | string }
   taxCents?: null | number
   transactionId?: null | string
   updatedAt: string
