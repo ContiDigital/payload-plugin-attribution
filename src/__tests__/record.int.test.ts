@@ -135,6 +135,23 @@ beforeEach(() => {
 afterAll(destroyPayloads)
 
 describe(`recordConversion on ${databaseName}`, () => {
+  it('persists and returns the subject ID across Payload reads and revisions', async () => {
+    const draft = lead('subject-persistence', { subject: { id: 42, collectionSlug: 'orders' } })
+    const event = await recordConversion({ draft, payload })
+    expect(event?.subject).toMatchObject({ id: '42', collectionSlug: 'orders', recordId: '42' })
+    const read = await payload.findByID({
+      id: event!.id,
+      collection: EVENTS_SLUG,
+      overrideAccess: true,
+    })
+    expect(read.subject).toMatchObject({ id: '42', collectionSlug: 'orders', recordId: '42' })
+    const revised = await recordConversion({
+      draft: { ...draft, revision: 2, subject: { id: 43, collectionSlug: 'orders' } },
+      payload,
+    })
+    expect(revised?.subject).toMatchObject({ id: '43', collectionSlug: 'orders', recordId: '43' })
+  })
+
   it('rolls back the event, deliveries and dispatches with the host transaction', async () => {
     const before = await countDeliveries()
     const req = await hostRequest()

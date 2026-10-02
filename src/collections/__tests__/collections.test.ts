@@ -148,7 +148,7 @@ describe('conversion-events', () => {
     }
     expect(
       names((named(conversionEvents(options).fields, 'subject') as GroupField).fields),
-    ).toEqual(['collectionSlug', 'id'])
+    ).toEqual(['collectionSlug', 'recordId'])
   })
 
   it.each(['identifiers', 'context'])('gates %s reads on the pii scope', async (name) => {

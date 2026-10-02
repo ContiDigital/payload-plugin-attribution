@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.3 (2026-10-02)
+
+- Preserve `subject.id` across Payload database reads. Payload strips nested fields
+  named `id`; events now persist `subject.recordId` and expose the compatible `id`
+  alias after reading. Regression coverage exercises recording, reading and revision.
+- Existing SQL installations must review a schema migration from `subject.id` to
+  `subject.recordId` and preserve existing subject IDs during the migration. No
+  automatic migration is shipped. Fresh installations use the corrected schema.
+
 All notable changes to this project are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
